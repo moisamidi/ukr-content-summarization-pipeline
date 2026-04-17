@@ -1,0 +1,13 @@
+faster-whisper
+ctranslate2
+
+numpy
+requests
+regex
+more-itertools
+filelock
+typing-extensions
+fsspec
+python-multipart
+
+fastapi

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YT Summarizer</title>
+<style>
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #1E1F29;
+  color: #e0e0e0;
+  margin: 0;
+  padding: 0 0 120px 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+.container {
+  background: #5E6280;
+  max-width: 700px;
+  width: 90%;
+  margin: 40px auto 80px auto;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  color: #ffffff;
+}
+h2 { text-align: center; color: #ffffff; }
+
+input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 30px;
+  margin: 10px 0;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background: #3d3f55;
+  color: #ffffff;
+  font-size: 16px;
+}
+input[type="text"]::placeholder { color: #cccccc; }
+
+input[type="text"]:disabled {
+  background: #3d3f55;  
+  color: #ffffff;
+  opacity: 1;          
+  cursor: not-allowed;
+}
+button {
+  background: #8E9AFF;
+  color: #1E1F29;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.3s, transform 0.2s;
+  padding: 12px 25px;
+}
+button:hover { background: #7a88ff; transform: scale(1.05); }
+
+#urlBtn {
+  width: 70%;
+  max-width: 400px;
+  display: block;
+  margin: 15px auto 25px auto; 
+}
+
+.file-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.dropzone {
+  border: 2px dashed #777;
+  border-radius: 10px;
+  padding: 20px 30px;
+  text-align: center;
+  margin: 20px 0;
+  transition: border-color 0.3s, background 0.3s;
+  cursor: pointer;
+  color: #cccccc;
+  background: #3d3f55;
+  position: relative;
+}
+.dropzone.dragover { border-color: #8E9AFF; background: #4a4e7e; }
+.dropzone .filename { margin-top: 10px; font-size: 14px; color: #ffffff; }
+
+#audioElem, #videoElem {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 6px;
+  display: none;
+}
+
+.result {
+  background: #2d2f45;
+  padding: 20px 15px 15px 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+  white-space: pre-wrap;
+  max-height: 300px;
+  overflow-y: auto;
+  color: #e0e0e0;
+  min-height: 80px;
+  font-size: 16px;
+  line-height: 1.6;
+  display: none;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: left;
+}
+
+.result.processing-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.processing {
+  color: #e0e0e0;
+  font-weight: 500;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.processing .dots span {
+  display: inline-block;
+  animation: floatDots 1s infinite;
+  margin-left: 3px;
+}
+.processing .dots span:nth-child(2) { animation-delay: 0.2s; }
+.processing .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes floatDots {
+  0% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-6px); opacity: 1; }
+  100% { transform: translateY(0); opacity: 0.6; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h2>🎧 Summarizer </h2>
+
+  <input id="url" type="text" placeholder="Paste YouTube URL" />
+  <hr>
+
+  <div id="dropzone" class="dropzone">
+    Drag & Drop audio/video here or click to select<br>
+    <small>Supported: mp3, wav, m4a, flac, webm, mp4</small>
+    <div class="filename" id="filename"></div>
+    <input type="file" id="fileInput" style="display:none;" />
+  </div>
+
+  <div class="file-controls">
+    <button id="playBtn" style="display:none;">Open File</button>
+  </div>
+
+  <div class="file-player" id="filePlayer" style="display:none;">
+    <audio id="audioElem" controls></audio>
+    <video id="videoElem" controls></video>
+  </div>
+   <button id="urlBtn" onclick="handleSummarize()">Summarize</button>
+
+
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+const ALLOWED_TYPES = [
+  "audio/mpeg","audio/wav","audio/x-wav","audio/mp4",
+  "audio/flac","audio/webm","video/mp4","video/webm"
+];
+
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const filenameDiv = document.getElementById('filename');
+const filePlayerDiv = document.getElementById("filePlayer");
+const playBtn = document.getElementById("playBtn");
+const audioElem = document.getElementById("audioElem");
+const videoElem = document.getElementById("videoElem");
+const resultDiv = document.getElementById("result");
+const urlInput = document.getElementById("url");
+const button = document.getElementById("urlBtn");
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  fileInput.files = e.dataTransfer.files;
+  updateFilename();
+});
+fileInput.addEventListener('change', updateFilename);
+
+function updateFilename() {
+  urlInput.value = "";
+  if(fileInput.files.length > 0){
+    const file = fileInput.files[0];
+
+    if(!ALLOWED_TYPES.includes(file.type)){
+      filenameDiv.innerText = "Unsupported file format";
+      fileInput.value = "";
+      playBtn.style.display = "none";
+      return;
+    }
+
+    filenameDiv.innerText = `📄 ${file.name}`;
+    const url = URL.createObjectURL(file);
+
+    audioElem.src = "";
+    videoElem.src = "";
+    audioElem.style.display = "none";
+    videoElem.style.display = "none";
+
+    if(file.type.startsWith("video")) {
+      videoElem.src = url;
+    } else {
+      audioElem.src = url;
+    }
+
+    playBtn.style.display = "inline-block";
+    playBtn.innerText = "Open File";
+  } else {
+    filenameDiv.innerText = '';
+    playBtn.style.display = "none";
+  }
+}
+urlInput.addEventListener("input", () => {
+  if (urlInput.value.trim()) {
+    fileInput.value = "";
+    filenameDiv.innerText = "";
+    audioElem.src = "";
+    videoElem.src = "";
+    playBtn.style.display = "none";
+  }
+});
+playBtn.addEventListener("click", () => {
+  if (filePlayerDiv.style.display === "none") {
+    filePlayerDiv.style.display = "block";
+
+    if (videoElem.src) {
+      videoElem.style.display = "block";
+      audioElem.style.display = "none";
+    }
+
+    if (audioElem.src) {
+      audioElem.style.display = "block";
+      videoElem.style.display = "none";
+    }
+
+    playBtn.innerText = "Close File";
+  } else {
+    filePlayerDiv.style.display = "none";
+
+    if (!audioElem.paused) audioElem.pause();
+    if (!videoElem.paused) videoElem.pause();
+
+    audioElem.style.display = "none";
+    videoElem.style.display = "none";
+    playBtn.innerText = "Open File";
+  }
+});
+
+function isYouTubeUrl(url) {
+  return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//.test(url);
+}
+
+function startProcessing() {
+  button.style.display = "none"; // 
+
+  urlInput.disabled = true;
+  fileInput.disabled = true;
+  dropzone.style.pointerEvents = "none";
+  dropzone.style.opacity = "0.6";
+
+  resultDiv.style.display = "flex";
+  resultDiv.classList.add("processing-center");
+  resultDiv.innerHTML = `
+    <div class="processing">
+      Processing<span class="dots"><span>.</span><span>.</span><span>.</span></span>
+    </div>
+  `;
+}
+
+function finishProcessing(text) {
+  button.style.display = "block";
+
+  urlInput.disabled = false;
+  fileInput.disabled = false;
+  dropzone.style.pointerEvents = "auto";
+  dropzone.style.opacity = "1";
+
+  resultDiv.style.display = "block";
+  resultDiv.classList.remove("processing-center");
+
+  resultDiv.innerText = text || "Something went wrong";
+}
+
+function showError(text) {
+  button.style.display = "block";
+
+  urlInput.disabled = false;
+  fileInput.disabled = false;
+  dropzone.style.pointerEvents = "auto";
+  dropzone.style.opacity = "1";
+
+  resultDiv.style.display = "flex";
+  resultDiv.classList.add("processing-center");
+
+  resultDiv.innerHTML = `
+    <div class="processing">${text}</div>
+  `;
+}
+function resetAll() {
+  urlInput.value = "";
+  fileInput.value = "";
+  filenameDiv.innerText = "";
+  audioElem.src = "";
+  videoElem.src = "";
+  filePlayerDiv.style.display = "none";
+  playBtn.style.display = "none";
+}
+
+function isValidYouTubeUrl(url) {
+  const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+  return pattern.test(url);
+}
+
+async function handleSummarize() {
+  let url = urlInput.value.trim();
+  let file = fileInput.files[0];
+
+  if (url) {
+    if (!isValidYouTubeUrl(url)) {
+      resultDiv.style.display = "flex";
+      resultDiv.classList.add("processing-center");
+
+      resultDiv.innerHTML = `
+        <div class="processing">Invalid YouTube URL</div>
+      `;
+      return;
+    }
+
+    startProcessing();
+
+    try {
+      const res = await fetch(`${API}/summarize?url=${encodeURIComponent(url)}`, {
+        method: "POST"
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showError(data.error);
+      } else {
+        finishProcessing(data.summary);
+      }
+
+    } catch (e) {
+      finishProcessing("API error");
+    }
+
+    return;
+  }
+
+  if (file) {
+    startProcessing();
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API}/summarize-file`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showError(data.error);
+      } else {
+        finishProcessing(data.summary);
+      }
+
+    } catch (e) {
+      finishProcessing("API error");
+    }
+
+    return;
+  }
+
+  alert("Provide URL or file");
+}
+</script>
+</body>
+</html>
