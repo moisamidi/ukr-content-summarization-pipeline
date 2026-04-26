@@ -9,5 +9,8 @@ filelock
 typing-extensions
 fsspec
 python-multipart
+uvicorn
+torch
+transformers
 
 fastapi

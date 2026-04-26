@@ -7,6 +7,8 @@ from app.services.whisper import transcribe_segments
 from app.services.chunking import smart_chunk_transcript
 from app.services.summarizer import tokenizer, summarize_with_two_levels
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+
 
 app = FastAPI()
 
@@ -21,7 +23,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return FileResponse("app/index.html")
 
 
 @app.post("/summarize")

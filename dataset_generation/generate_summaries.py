@@ -29,17 +29,44 @@ def count_tokens(text):
 
 def chunk_text(text, max_tokens=MAX_TOKENS):
     sentences = [s.text for s in sentenize(text)]
-    chunks, current, token_count = [], [], 0
-    for s in sentences:
-        s_tokens = count_tokens(s)
-        if token_count + s_tokens > max_tokens and current:
-            chunks.append(" ".join(current))
-            current, token_count = [s], s_tokens
+
+    chunks = []
+    current_chunk = ""
+    
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+
+        sentence_tokens = tokenizer.encode(sentence, add_special_tokens=False)
+
+        if len(sentence_tokens) > max_tokens:
+            for i in range(0, len(sentence_tokens), max_tokens):
+                piece_tokens = sentence_tokens[i:i+max_tokens]
+                piece = tokenizer.decode(piece_tokens)
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                    current_chunk = ""
+
+                chunks.append(piece.strip())
+            continue
+
+        if current_chunk:
+            test_chunk = current_chunk + " " + sentence
         else:
-            current.append(s)
-            token_count += s_tokens
-    if current:
-        chunks.append(" ".join(current))
+            test_chunk = sentence
+
+        token_count = len(tokenizer.encode(test_chunk, add_special_tokens=False))
+
+        if token_count > max_tokens:
+            if current_chunk:
+                chunks.append(current_chunk.strip())
+            current_chunk = sentence
+        else:
+            current_chunk = test_chunk
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
     return chunks
 
 

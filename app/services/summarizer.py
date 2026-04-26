@@ -54,9 +54,14 @@ def summarize_with_two_levels(chunks):
         if not sent:
             continue
 
-        sent_tokens = len(
-            tokenizer.encode(sent, add_special_tokens=False)
-        )
+        tokens = tokenizer.encode(sent, add_special_tokens=False)
+        sent_tokens = len(tokens)
+
+        if sent_tokens > MAX_TOKENS:
+            for i in range(0, sent_tokens, MAX_TOKENS):
+                piece = tokenizer.decode(tokens[i:i+MAX_TOKENS])
+                level2_chunks.append(piece.strip())
+            continue
 
         if current_text and current_tokens + sent_tokens > MAX_TOKENS:
             level2_chunks.append(current_text.strip())
