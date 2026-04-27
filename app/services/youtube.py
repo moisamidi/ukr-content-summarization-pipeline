@@ -1,11 +1,12 @@
 import os
 import subprocess
+from app.services.config import COOKIES_FILE
 
 OUT_DIR = "output"
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
-def download_audio(youtube_url, cookies_file=None):
+def download_audio(youtube_url):
     print(f"[INFO] Downloading audio from URL: {youtube_url}")
     output_template = os.path.join(OUT_DIR, "%(id)s.%(ext)s")
 
@@ -17,8 +18,8 @@ def download_audio(youtube_url, cookies_file=None):
         "-o", output_template,
     ]
 
-    if cookies_file:
-        cmd.extend(["--cookies", cookies_file])
+    if COOKIES_FILE and os.path.exists(COOKIES_FILE):
+        cmd.extend(["--cookies", COOKIES_FILE])
 
     cmd.append(youtube_url)
 
