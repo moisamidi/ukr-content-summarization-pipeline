@@ -102,7 +102,7 @@ It consists of two stages:
 
 For detailed instructions and configuration, see:
 
-- [Dataset Creation Pipeline](dataset_creation/README.md)
+- [Dataset Creation Pipeline](dataset_generation/README.md)
 
 ## Experiments
 
