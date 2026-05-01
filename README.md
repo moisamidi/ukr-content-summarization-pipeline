@@ -82,27 +82,27 @@ You can provide:
 
 The system will return a generated summary of the content.
 
+## Application Interface
+
+Below is an example of the user interface of the application:
+
+![Application UI](assets/app.png)
+
 ## Dataset Creation
 
 The project includes a dedicated module for building custom datasets:
 
-dataset_creation/
+`dataset_creation/`
 
-This module allows you to:
 
-- collect YouTube links into a single input file  
-- download and transcribe content  
-- split transcripts into chunks  
-- generate pseudo-labels using an LLM (via your API key)  
+It consists of two stages:
 
-As a result, the pipeline produces a dataset in JSON format where:
+- transcription (YouTube → text)  
+- summarization (text → structured dataset)  
 
-- each file corresponds to a single video  
-- each file contains:
-  - segmented text chunks  
-  - corresponding summaries  
+For detailed instructions and configuration, see:
 
-This forms text–summary pairs suitable for training summarization models.
+- [Dataset Creation Pipeline](dataset_creation/README.md)
 
 ## Experiments
 
@@ -114,24 +114,46 @@ The repository includes an `experiments/` directory containing:
 
 The contents may vary depending on the specific experiment and configuration.
 
-## Models
+All experimental results and artifacts are also collected in a single location for convenience:
 
-Fine-tuned summarization models are available on Hugging Face:
+- [Full Experiments Archive](https://drive.google.com/drive/folders/1SUb6UjSqrxQhOQ4iX3EHoxa7hTf9PJ87?usp=sharing)
+
+## Models and Datasets
+
+This project includes a series of fine-tuned summarization models and corresponding datasets used throughout the experimental process.
+
+The models were obtained through multiple fine-tuning experiments aimed at identifying the most suitable model for the main pipeline.  
+While all versions are provided for completeness, the final pipeline uses **yt-dataset-short-v4-full-prompt2 **, as it demonstrated the best performance (see the Experiments section for details)
+
+### Models (Hugging Face)
 
 - https://huggingface.co/moisamidi/yt-summarizer-v1-short-p1  
 - https://huggingface.co/moisamidi/yt-summarizer-v2-short-ft-p2  
 - https://huggingface.co/moisamidi/yt-summarizer-v3-short-mixed  
 - https://huggingface.co/moisamidi/yt-summarizer-v4-short-full-p2  
 
-## Datasets
+---
 
-Corresponding datasets:
+### Datasets (Hugging Face)
+
+The datasets are provided in two formats:
+
+- **Split datasets** — ready for training (train / validation / test)  
+- **Raw / prompt-based datasets** — used during dataset construction and experimentation  
+
+#### Split datasets
 
 - https://huggingface.co/datasets/moisamidi/yt-dataset-short-v1-jsonl-split  
 - https://huggingface.co/datasets/moisamidi/yt-dataset-short-v2-jsonl-split  
-- https://huggingface.co/datasets/moisamidi/yt-dataset-short-v2-jsonl-split  
+- https://huggingface.co/datasets/moisamidi/yt-dataset-short-v3-jsonl-split  
 - https://huggingface.co/datasets/moisamidi/yt-dataset-short-v4-jsonl-split  
 
+#### Raw / prompt-based datasets
+
+- https://huggingface.co/datasets/moisamidi/yt-dataset-short-v1-prompt1  
+- https://huggingface.co/datasets/moisamidi/yt-dataset-short-v2-prompt2  
+- https://huggingface.co/datasets/moisamidi/yt-dataset-short-v3-mixed  
+- https://huggingface.co/datasets/moisamidi/yt-dataset-short-v4-full-prompt2  
 ## Notes
 
 - The system is designed for Ukrainian language processing  
