@@ -7,6 +7,6 @@ WHISPER_COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
 
 MAX_TOKENS = 512
 
-MODEL_NAME = "moisamidi/yt-summarizer-mt5"
+MODEL_NAME = "moisamidi/yt-summarizer-v4-short-full-p2"
 
 COOKIES_FILE = os.getenv("COOKIES_FILE")
